@@ -1,7 +1,9 @@
 # 03 — Unattended keyhole calibration
 
 Calibrates the `laserbeamFoam` Huang case (Al, 500 W, 0.6 m/s) against the
-X-ray data, on the adaptive 5 µm mesh, with up to 8 jobs × 8 cores at once.
+X-ray data, on the adaptive mesh with 10 µm cells at the surface
+(`config.json` `case.max_refinement`: 1 = 10 µm, 2 = 5 µm), with up to 8 jobs ×
+8 cores at once.
 Start it once and leave it: it chooses runs, runs them, stops each one when
 the keyhole depth is steady, learns from every result, and stops when the
 calibrated values are settled or the budget is spent.

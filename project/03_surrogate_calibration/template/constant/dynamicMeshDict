@@ -33,7 +33,7 @@ unrefineLevel   0.001;
 nBufferLayers   2;
 
 // Refine cells only up to maxRefinement levels
-maxRefinement   2;
+maxRefinement   @maxRefinement@;   // set by make_case.py (config case.max_refinement): 1 -> 10 um, 2 -> 5 um
 
 // Stop refinement if maxCells reached
 maxCells        20000000;

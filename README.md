@@ -67,7 +67,8 @@ cd project/03_surrogate_calibration
 ./run_calibration.sh            # Ctrl+B, D to leave it running
 ```
 
-- Runs up to 8 cases × 8 cores at once on the adaptive 5 µm mesh.
+- Runs up to 8 cases × 8 cores at once on the adaptive mesh (10 µm cells at
+  the surface; 5 µm with one setting).
 - Measures each run like the X-ray camera (side view, 1.96 µm pixels, every
   20 µs) and stops it once the keyhole depth is steady.
 - A Gaussian-process surrogate learns from every finished run, estimates the

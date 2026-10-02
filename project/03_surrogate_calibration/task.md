@@ -108,7 +108,7 @@ all other properties.
 | Item | Value |
 |---|---|
 | Domain | x ~800 µm (from 1500), y 120 µm argon + 900 µm Al, z 500 µm (real sample thickness) |
-| Mesh | AMR, base 20 µm, 2 levels → 5 µm (same as the steady-state run) |
+| Mesh | AMR, base 20 µm, **1 level → 10 µm** (user, 2026-10-02: calibrate on 10 µm; `config.json` `case.max_refinement`, 2 → 5 µm) |
 | Run length | until depth steady + ~3 fluctuation periods (~600 µs guess), hard cap ~800 µs, early stop |
 | Wall time | ~79 s per simulated µs alone on 8 cores → ~13 h per 600 µs; ~16–20 h with 8 jobs sharing |
 | Field writes | every 10 µs for depth; keep every 20 µs + last; rest deleted after extraction |

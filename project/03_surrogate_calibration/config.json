@@ -17,7 +17,9 @@
     "laser_x0": 150e-6,
     "scan_speed": 0.6,
     "end_time_cap": 1.0e-3,
-    "write_interval": 2e-6
+    "write_interval": 2e-6,
+    "max_refinement": 1,
+    "_max_refinement": "AMR levels on the 20 um base mesh: 1 -> 10 um cells at the surface (calibration mesh, user 2026-10-02), 2 -> 5 um"
   },
 
   "knobs": [

@@ -45,3 +45,8 @@
 - Convergence made stricter: must hold for 3 updates in a row; if no knob seems to matter -> WARN and keep going (the fake data were constant, which made it converge at once).
 - Dashboard charts checked (depth vs time with Huang band; knob estimates). History chart now has markers (single update was invisible).
 - Note: in the test each driver pass was slow (fake jobs wrote every second, ~2.5 s post-processing per write), so the NaN stop came after the fake job ended. Real writes come every ~2–3 min per job.
+
+## [2026-10-02 00:40:37] Calibration mesh switched to 10 um (user)
+- User: should have checked with 10 um first; calibrate on 10 um. The 5 um steady-state run in 01 keeps going (depth 94/169/234/264 um at 20/40/60/80 us, slowing).
+- template dynamicMeshDict maxRefinement -> @maxRefinement@; config.json case.max_refinement = 1 (10 um); make_case.py fills it (tested: 1 written, parses). README/task updated.
+- Expected ~6-8x cheaper per run than 5 um. Calibrated values hold for the 10 um mesh (mesh sensitivity known, user's choice).

@@ -75,6 +75,7 @@ def make_case(out_dir, params, cfg, n_procs=None):
         "endTime": fmt(t_end),
         "writeInterval": fmt(c["write_interval"]),
         "nProcs": str(n_procs or cfg["cores"]["cores_per_job"]),
+        "maxRefinement": str(int(c.get("max_refinement", 2))),
         "laserRadius": fmt(p["laserRadius"]),
         "elecCond": fmt(p["elecCond"]),
         "ks0": fmt(p["ks"]*KS[0]), "ks1": fmt(p["ks"]*KS[1]),
