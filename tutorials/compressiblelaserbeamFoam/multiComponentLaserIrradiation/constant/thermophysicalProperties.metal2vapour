@@ -1,0 +1,65 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2006                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      thermophysicalProperties.metal2vapour;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// metal2vapour = CHROMIUM VAPOUR (perfectGas, R derived from molWeight)
+
+phaseState      gaseous;  // or: gaseous, solid
+
+thermoType
+{
+    type            heRhoThermo;
+    mixture         pureMixture;
+    transport       const;
+    thermo          eConst;
+    equationOfState perfectFluid;//perfectGas;//
+    specie          specie;
+    energy          sensibleInternalEnergy;
+}
+
+TSolidus    5.0;
+TLiquidus   10.0;
+LatentHeat  1.0;
+
+elec_conductivity   1.0;
+magnetic_permeability   1.256e-6;
+
+mixture
+{
+
+	equationOfState
+{
+    R           160;
+    rho0        0.0;
+}
+    specie
+    {
+        molWeight   52.00;          // Cr -> R = 8314/52.00 ~ 160 J/kg/K
+    }
+    thermodynamics
+    {
+        Cv          240;            // monatomic vapour, 1.5*R
+        Hf          0;
+    }
+    transport
+    {
+        mu          1.0e-5;
+        Pr          0.67;
+    }
+}
+
+
+// ************************************************************************* //

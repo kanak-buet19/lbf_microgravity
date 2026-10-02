@@ -1,0 +1,140 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2006                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      fvSolution;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+solvers
+{
+    "alpha.*"
+    {
+        nAlphaSubCycles 1;
+        cAlpha	1;
+    }
+
+
+
+    "pcorr.*"
+    {
+        solver          PCG;
+        preconditioner
+        {
+            preconditioner  GAMG;
+            tolerance       1e-05;
+            relTol          0;
+            smoother        GaussSeidel;
+        }
+        tolerance       1e-05;
+        relTol          0;
+        maxIter         100;
+    }
+
+    ".*(rho|rhoFinal)"
+    {
+        solver          diagonal;
+    }
+
+    p_rgh
+    {
+        solver          GAMG;
+        tolerance       1e-07;
+        relTol          0.0;
+        smoother        GaussSeidel;
+    }
+
+    p_rghFinal
+    {
+        solver          PCG;
+        preconditioner
+        {
+            preconditioner  GAMG;
+            tolerance       1e-07;
+            relTol          0;
+            nVcycles        2;
+            smoother        GaussSeidel;
+        }
+        tolerance       1e-07;
+        relTol          0;
+        maxIter         20;
+    }
+
+    "(U|T|k|B|nuTilda)"
+    {
+        solver          smoothSolver;
+        smoother        symGaussSeidel;
+        tolerance       1e-08;
+        relTol          0.0;
+        nSweeps         1;
+    }
+
+    "(U|T|k|B|nuTilda)Final"
+    {
+        $U;
+        relTol          0;
+    }
+
+    // Temperature: own entries (exact names win over the pattern above).
+    // minIter 1 makes T respond on every pass of the MELTING loop. The
+    // melt-fraction update in TEqn.H assumes T reacts to each update; with 0
+    // iterations T stays frozen and the liquid fraction only creeps.
+    T
+    {
+        solver          smoothSolver;
+        smoother        symGaussSeidel;
+        tolerance       1e-08;
+        relTol          0;
+        nSweeps         2;      // fuller T response per MELTING pass
+        minIter         1;
+    }
+
+    TFinal
+    {
+        $T;
+    }
+
+    "alphaRho.*"
+    {
+        solver          PBiCGStab;
+        preconditioner  DILU;
+        tolerance       1e-12;
+        relTol          0;
+    }
+}
+
+MELTING
+{
+    minTempCorrector 1;
+    maxTempCorrector 10;    // was 20
+    epsilonTolerance 1e-5;  // was 1e-6: liquid fraction to 0.001 % per cell
+    epsilonRelaxation 0.9;
+
+    damperSwitch true;//false;//true;
+}
+
+PIMPLE
+{
+    nOuterCorrectors 1;
+    nCorrectors     3;
+    nNonOrthogonalCorrectors 3;
+}
+
+relaxationFactors
+{
+    equations
+    {
+        "U.*"           1;
+    }
+}
+
+// ************************************************************************* //

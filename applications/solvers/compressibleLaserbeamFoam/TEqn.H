@@ -1,0 +1,183 @@
+{
+
+  //https://www.cfd-online.com/Forums/openfoam-solving/251323-teqn-compressibleinterfoam.html
+
+
+
+
+
+    int iter = 0;
+
+
+    dimensionedScalar residual("residual",dimensionSet(0, 0, 0, 0, 0),scalar(1.0));
+    dimensionedScalar meanResidual("meanResidual",dimensionSet(0, 0, 0, 0, 0),scalar(1.0));
+    dimensionedScalar residual2("residual2",dimensionSet(0, 0, 0, 0, 0),scalar(1.0));
+    dimensionedScalar meanResidual2("meanResidual2",dimensionSet(0, 0, 0, 0, 0),scalar(1.0));
+
+
+
+
+
+    TRHS*=0.0;//=TRHSzero;
+
+    // no spurious mushy drag in gas
+    const dimensionedScalar cMinMelt   ("cMinMelt",    dimless, 1e-4); // div guard
+    const dimensionedScalar cThreshMelt("cThreshMelt", dimless, 1e-2); // mask ramp
+
+    const volScalarField rCond(1.0/max(condensate, cMinMelt));
+    const volScalarField TSolidusCond  (TSolidus*rCond);    // -> metal T_sol
+    const volScalarField TLiquidusCond (TLiquidus*rCond);   // -> metal T_liq
+
+    // 1 where metal present, ramps to 0 in the gas
+    const volScalarField meltMask
+    (
+        min(max(condensate/cThreshMelt, scalar(0)), scalar(1))
+    );
+
+    // Melt-fraction update coefficient [1/K] for
+    //     epsilon1 += meltCoeff*(T - Tcorr)
+    // Linearising one corrector pass: raising epsilon1 by d moves Tcorr up by
+    // dTmush*d (mushy slope) and moves T down by (meltMask*LatentHeat/Cv)*d
+    // (the latent term below, TRHS). The error then shrinks per pass by
+    //     1 - meltCoeff*(dTmush + meltMask*LatentHeat/Cv),
+    // so this choice gives 1 - epsilonRelaxation in every cell. The old
+    // epsilonRel*Cv/L_metal ignored dTmush and the metal fraction: in
+    // part-metal interface cells it was too small by ~meltMask*condensate and
+    // the loop crept (x0.98 per pass), always hitting maxTempCorrector.
+    // LatentHeat is condensed-only (see update.H): 0 in pure gas, so the
+    // floor only guards pure-gas cells, where meltMask = 0 anyway.
+    const volScalarField meltCoeff
+    (
+        epsilonRel
+       /max
+        (
+            (TLiquidusCond - TSolidusCond)
+          + meltMask*LatentHeat/mixture.Cv(),
+            dimensionedScalar("dTfloor", dimTemperature, 1e-3)
+        )
+    );
+    // ------------------------------------------------------------------------
+
+    do{
+iter++;
+epsilon1.storePrevIter();
+
+
+
+TRHS = meltMask*LatentHeat*
+(
+    fvc::ddt(rho, epsilon1)
+  + fvc::div(mixture.rhoPhi(), epsilon1)
+);
+
+TRHS.correctBoundaryConditions();
+
+
+    const volScalarField& Joulesource =
+        mthd.valid()
+      ? mthd->Joulesource()
+      : zeroJoulesource;
+
+    fvScalarMatrix TEqn
+    (
+        fvm::ddt(rho, T)
+      + fvm::div(mixture.rhoPhi(), T)
+      - fvm::Sp(fvc::ddt(rho) + fvc::div(mixture.rhoPhi()), T)
+      - fvm::laplacian(mixture.alphaEff(turbulence->mut()), T)
+      + (
+            fvc::div(fvc::absolute(phi, U), p)
+          + fvc::ddt(rho, K) + fvc::div(mixture.rhoPhi(), K)
+        )*mixture.rCv()
+
+        ==
+          mixture.rCv()*laser.deposition()
+        + mixture.rCv()*Joulesource
+        - mixture.rCv()*TRHS
+        -mass_dot
+    );
+
+    TEqn.relax();
+    TEqn.solve();
+
+
+
+ {
+        const dimensionedScalar Tfloor("Tfloor", dimTemperature, 250.0);
+        // ceiling to match the floor, kinetic heating spikes have no other
+        // bound. default 1e6 = off, set TMax in PIMPLE dict to arm it
+        const scalar Tceil = pimple.dict().getOrDefault<scalar>("TMax", 1e6);
+        scalarField& TI = T.primitiveFieldRef();
+        label nClip = 0, nClipHi = 0;
+        forAll(TI, celli)
+        {
+            if (TI[celli] < Tfloor.value()) { TI[celli] = Tfloor.value(); ++nClip; }
+            if (TI[celli] > Tceil) { TI[celli] = Tceil; ++nClipHi; }
+        }
+        reduce(nClip, sumOp<label>());
+        reduce(nClipHi, sumOp<label>());
+        if (nClip) Info<< "TEqn: floored " << nClip << " cell(s)" << endl;
+        if (nClipHi) Info<< "TEqn: ceilinged " << nClipHi << " cell(s)" << endl;
+        T.correctBoundaryConditions();
+    }
+
+
+Tcorr = (TLiquidusCond - TSolidusCond)*epsilon1 + TSolidusCond;
+Tcorr.correctBoundaryConditions();
+
+// Masked, normalised melt-fraction update. In metal (meltMask=1) this is
+// identical to the original; in (near-)gas (meltMask->0) epsilon1 -> 1.
+epsilon1 =
+    meltMask*max(min(epsilon1 + meltCoeff*(T - Tcorr), scalar(1)), scalar(0))
+  + (scalar(1) - meltMask);
+
+
+{
+    const wordList e1MaskNames
+    (
+        mesh.lookupObject<IOdictionary>("thermophysicalProperties")
+            .lookupOrDefault<wordList>("phaseChangeMaskPatches", wordList())
+    );
+
+    label nE1Mask = 0;
+    scalarField& e1I = epsilon1.primitiveFieldRef();
+
+    for (const word& pn : e1MaskNames)
+    {
+        const label patchi = mesh.boundaryMesh().findPatchID(pn);
+        if (patchi < 0) continue;   // typo already warned about in solveAlphas
+
+        const labelUList& fc = mesh.boundary()[patchi].faceCells();
+        forAll(fc, bfacei)
+        {
+            if (e1I[fc[bfacei]] < 1.0)
+            {
+                e1I[fc[bfacei]] = 1.0;
+                ++nE1Mask;
+            }
+        }
+    }
+    reduce(nE1Mask, sumOp<label>());
+    if (nE1Mask)
+    {
+        Info<< "solidification masked in " << nE1Mask
+            << " boundary cell(s)" << endl;
+    }
+}
+epsilon1.correctBoundaryConditions();
+
+
+residual = gMax(mag(epsilon1.primitiveField()-epsilon1.prevIter().primitiveField()));
+meanResidual = gSum(mag(epsilon1.primitiveField()-epsilon1.prevIter().primitiveField())*mesh.V())/gSum(mesh.V().field());
+
+
+        Info << "Correcting epsilon1, mean residual = " << meanResidual.value()
+             << ", max residual = " << residual.value()
+             << endl;
+
+
+}while((iter < minTCorr || (residual > epsilonTol)) && iter <= maxTCorr );
+
+
+
+    mixture.correct();
+}

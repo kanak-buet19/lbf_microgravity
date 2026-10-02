@@ -1,0 +1,6 @@
+# Python packages for the calibration driver (installed into .venv by run_calibration.sh)
+numpy>=1.24
+scipy>=1.10
+matplotlib>=3.7
+pillow>=9.0
+scikit-learn>=1.3

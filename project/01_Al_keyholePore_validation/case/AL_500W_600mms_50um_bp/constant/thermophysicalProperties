@@ -1,0 +1,87 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Version:  v2512
+    \\  /    A nd           | Website:  www.openfoam.com
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      thermophysicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// The vapour of a metal MUST be named <metal>vapour (lower-case "vapour"):
+// the solver finds the evaporation pair by that name
+// (multiphaseMixtureThermo.C: vapName = liq.name() + "vapour"). Any other
+// name silently gives no evaporation at all.
+phases (aluminium aluminiumvapour argon);
+
+pMin            1000;
+
+// Reference pressure for the boiling point in the saturation-pressure law
+// P_sat = P0 exp(M L_v/(R T_b) (1 - T_b/T)). T_b is the boiling point at 1 atm.
+P0              1.01325e5;
+
+// Phase-change flux is spread over a band that follows the local cell size
+// (interfaceCellFactor x cell size), so it does not depend on dx.
+// interface_thickness is still read; it is only used if
+// localInterfaceThickness is false.
+localInterfaceThickness true;
+interfaceCellFactor     2.5;
+interface_thickness     15e-6;
+
+accommodationCoeffEvap  1.0;    // clean liquid metal
+accommodationCoeffCond  0.05;   // as in multiComponentLaserIrradiation
+
+// Do not let the volume-closure correction add or remove volume next to the
+// open top patch; the boundary condition takes it.
+closureMaskPatches (top);
+
+// Liquid Al surface tension at the melting point [N/m]. One constant value
+// is used for the curvature force; the Marangoni force uses dsigmadT.
+sigmas
+(
+    (aluminiumvapour aluminium) 0.914
+    (argon aluminium)           0.914
+    (aluminiumvapour argon)     0.0
+);
+
+dsigmadT
+(
+    (aluminiumvapour aluminium) -3.5e-4
+    (argon aluminium)           -3.5e-4
+    (aluminiumvapour argon)     0.0
+);
+
+// Boiling point of Al at 1 atm [K]
+boils
+(
+    (aluminiumvapour aluminium) 2743
+);
+
+// Latent heat of vaporisation of Al [J/kg]
+LatentHeatGas
+(
+    (aluminiumvapour aluminium) 1.08e7
+);
+
+interfaceCompression
+(
+    (aluminiumvapour aluminium) 1.0
+    (argon aluminium)           1.0
+    (aluminiumvapour argon)     0.0
+);
+
+interfaceDiffusion
+(
+    (aluminiumvapour aluminium) 0.0
+    (argon aluminium)           0.0
+    (aluminiumvapour argon)     0.0
+);
+
+// ************************************************************************* //

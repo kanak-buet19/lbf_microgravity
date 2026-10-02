@@ -1,0 +1,58 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Version:  v2512
+    \\  /    A nd           | Website:  www.openfoam.com
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      thermophysicalProperties.aluminiumvapour;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Aluminium vapour as an ideal monatomic gas.
+
+phaseState      gaseous;
+
+thermoType
+{
+    type            heRhoThermo;
+    mixture         pureMixture;
+    transport       const;
+    thermo          eConst;
+    equationOfState perfectGas;
+    specie          specie;
+    energy          sensibleInternalEnergy;
+}
+
+// Not used for a gas, but read by the solver.
+TSolidus        5.0;
+TLiquidus       10.0;
+LatentHeat      1.0;
+elec_conductivity       1.0;
+magnetic_permeability   1.256e-6;
+
+mixture
+{
+    specie
+    {
+        molWeight   26.98;
+    }
+    thermodynamics
+    {
+        Cv          462;        // 3/2 R/M for a monatomic gas [J/(kg K)]
+        Hf          0;
+    }
+    transport
+    {
+        mu          1.0e-5;
+        Pr          1.0;
+    }
+}
+
+// ************************************************************************* //

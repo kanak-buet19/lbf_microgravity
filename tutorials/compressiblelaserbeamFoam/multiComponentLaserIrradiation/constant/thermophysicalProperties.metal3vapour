@@ -1,0 +1,67 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2006                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      thermophysicalProperties.metal3vapour;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// metal3vapour = NICKEL VAPOUR (perfectGas, R derived from molWeight)
+
+phaseState      gaseous;  // or: gaseous, solid
+
+thermoType
+{
+    type            heRhoThermo;
+    mixture         pureMixture;
+    transport       const;
+    thermo          eConst;
+    equationOfState perfectFluid;//perfectGas;//
+    specie          specie;
+    energy          sensibleInternalEnergy;
+}
+
+TSolidus    5.0;
+TLiquidus   10.0;
+LatentHeat  1.0;
+
+elec_conductivity   1.0;
+magnetic_permeability   1.256e-6;
+
+mixture
+{
+
+	equationOfState
+{
+    R           142;
+    rho0        0.0;
+}
+
+
+    specie
+    {
+        molWeight   58.69;          // Ni -> R = 8314/58.69 ~ 142 J/kg/K
+    }
+    thermodynamics
+    {
+        Cv          213;            // monatomic vapour, 1.5*R
+        Hf          0;
+    }
+    transport
+    {
+        mu          1.0e-5;
+        Pr          0.67;
+    }
+}
+
+
+// ************************************************************************* //

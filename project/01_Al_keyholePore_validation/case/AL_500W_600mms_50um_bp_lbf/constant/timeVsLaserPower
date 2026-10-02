@@ -1,0 +1,7 @@
+// time [s]   power [W]
+// 500 W, ramped over the first 1 us to avoid a pressure shock at t = 0.
+(
+    (0          0)
+    (1e-6       500)
+    (1.5e-3     500)
+)

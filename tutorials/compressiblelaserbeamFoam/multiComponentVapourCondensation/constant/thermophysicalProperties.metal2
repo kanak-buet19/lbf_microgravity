@@ -1,0 +1,64 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2006                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      thermophysicalProperties.metal2;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+phaseState      condensed;  // or: gaseous, solid
+
+thermoType
+{
+    type            heRhoThermo;
+    mixture         pureMixture;
+    transport       const;
+    thermo          hConst;
+    equationOfState adiabaticPerfectFluid;
+    specie          specie;
+    energy          sensibleInternalEnergy;
+}
+
+// Pb: melting point 600.6 K, boiling point 2022 K
+TSolidus	595;
+TLiquidus	605;
+LatentHeat	2.32e+04;        // latent heat of FUSION [J/kg]
+elec_conductivity	1.05e6;
+magnetic_permeability	1.256e-6;
+
+mixture
+{
+    specie
+    {
+        molWeight   207.2;
+    }
+    equationOfState
+    {
+        p0	1e5;
+        rho0         10660;
+        gamma	1.2;
+        B	1e7;          // soft liquid (c ~ 35-45 m/s) for tutorial timestep
+    }
+    thermodynamics
+    {
+        Cp          147;
+        Hf          0;
+    }
+    transport
+    {
+        mu          0.0026;
+        Pr          0.024;        // Pr = mu*Cp/k, k = 16 W/m/K
+    }
+}
+
+
+// ************************************************************************* //

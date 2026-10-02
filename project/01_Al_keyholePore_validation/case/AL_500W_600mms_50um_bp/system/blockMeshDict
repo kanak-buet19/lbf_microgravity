@@ -1,0 +1,136 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Version:  v2512
+    \\  /    A nd           | Website:  www.openfoam.com
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      blockMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Huang et al. 2022, Movie 4: Al bare plate, 500 W, 0.6 m/s, 50 um spot.
+//
+// Axes (fixed by the ray-tracing code: beam travels along +y, beam position
+// is given in the x-z plane):
+//   x = scan direction
+//   y = depth; y = 0 is the open top, +y points into the metal (gravity +y)
+//   z = across the plate; the plate is 0.5 mm thick, held between two glassy
+//       carbon plates (zMin / zMax walls)
+//
+//   y = 0     .. Hgas      argon
+//   y = Hgas  .. Hgas+Hmet aluminium
+//
+// Two blocks in y so the metal surface sits exactly on a cell face for any dx.
+//
+// Base mesh for adaptive refinement (constant/dynamicMeshDict): 20 um cells,
+// split twice (maxRefinement 2) to 5 um at the metal surface, keyhole and
+// bubbles. 20 um divides every length below exactly, so all cells are cubes.
+
+dx      20e-6;      // base cell size [m] -> 75 x 51 x 25 = 95,625 cells
+
+Lx      1500e-6;    // length along scan
+Lz      500e-6;     // plate thickness (experiment)
+Hgas    120e-6;     // argon above the plate
+Hmet    900e-6;     // metal depth (keyhole reaches ~660 um)
+
+Ly      #eval{ $Hgas + $Hmet };
+
+nx      #eval{ round($Lx/$dx) };
+nz      #eval{ round($Lz/$dx) };
+nyGas   #eval{ round($Hgas/$dx) };
+nyMet   #eval{ round($Hmet/$dx) };
+
+vertices
+(
+    (0    0     0)      // 0
+    ($Lx  0     0)      // 1
+    ($Lx  $Hgas 0)      // 2
+    (0    $Hgas 0)      // 3
+    (0    0     $Lz)    // 4
+    ($Lx  0     $Lz)    // 5
+    ($Lx  $Hgas $Lz)    // 6
+    (0    $Hgas $Lz)    // 7
+
+    ($Lx  $Ly   0)      // 8
+    (0    $Ly   0)      // 9
+    ($Lx  $Ly   $Lz)    // 10
+    (0    $Ly   $Lz)    // 11
+);
+
+blocks
+(
+    hex (0 1 2 3 4 5 6 7)   ($nx $nyGas $nz) simpleGrading (1 1 1)   // argon
+    hex (3 2 8 9 7 6 10 11) ($nx $nyMet $nz) simpleGrading (1 1 1)   // metal
+);
+
+edges
+(
+);
+
+boundary
+(
+    top             // open to the argon chamber; the laser enters here
+    {
+        type patch;
+        faces
+        (
+            (0 1 5 4)
+        );
+    }
+    bottom
+    {
+        type wall;
+        faces
+        (
+            (9 11 10 8)
+        );
+    }
+    xMin
+    {
+        type wall;
+        faces
+        (
+            (0 4 7 3)
+            (3 7 11 9)
+        );
+    }
+    xMax
+    {
+        type wall;
+        faces
+        (
+            (1 2 6 5)
+            (2 8 10 6)
+        );
+    }
+    zMin            // glassy carbon wall
+    {
+        type wall;
+        faces
+        (
+            (0 3 2 1)
+            (3 9 8 2)
+        );
+    }
+    zMax            // glassy carbon wall
+    {
+        type wall;
+        faces
+        (
+            (4 5 6 7)
+            (7 6 10 11)
+        );
+    }
+);
+
+mergePatchPairs
+(
+);
+
+// ************************************************************************* //

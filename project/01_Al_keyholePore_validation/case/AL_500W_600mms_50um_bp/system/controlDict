@@ -1,0 +1,66 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Version:  v2512
+    \\  /    A nd           | Website:  www.openfoam.com
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+application     compressibleLaserbeamFoam;
+
+startFrom       latestTime;
+startTime       0;
+stopAt          endTime;
+
+// Laser runs 1.5 ms: the tip moves 900 um, past the ~1 ms the experiment
+// needs to reach a steady keyhole.
+endTime         2.6e-6;     // DIAGNOSTIC (blow-up at ~2.35 us). Production: 1.5e-3
+
+deltaT          1e-10;
+
+// Write every 20 us = one frame of the 50 kHz X-ray camera.
+writeControl    adjustableRunTime;
+writeInterval   1e-7;       // DIAGNOSTIC. Production: 2e-5
+
+purgeWrite      0;
+writeFormat     binary;
+writePrecision  8;
+writeCompression off;
+timeFormat      general;
+timePrecision   8;
+
+runTimeModifiable yes;
+
+adjustTimeStep  yes;
+maxCo           0.05;
+maxAlphaCo      0.05;
+maxDeltaT       1e-7;
+
+functions
+{
+    // DIAGNOSTIC: min/max and the cell location of each, every time step.
+    // Output: log + postProcessing/minMax/0/fieldMinMax.dat
+    minMax
+    {
+        type            fieldMinMax;
+        libs            (fieldFunctionObjects);
+        fields          (U T p p_rgh alpha.aluminiumvapour alpha.aluminium);
+        mode            magnitude;
+        location        yes;
+        writeToFile     yes;
+        log             yes;
+        executeControl  timeStep;
+        writeControl    timeStep;
+    }
+}
+
+// ************************************************************************* //

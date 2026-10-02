@@ -1,0 +1,13 @@
+# Log — 02 Terminal run dashboard
+
+[2026-10-01 19:57:57] Project created at user request: turn the repeated per-step solver output into a live terminal dashboard. Wrote `task.md` (objective, 7 tasks, list of what one time step prints, candidate panels, constraints). Note: the `.gitignore` rule `0*` also matches `project/02_*`, so this folder is not tracked by git.
+[2026-10-01 19:58:03] Checked: `rich` (Python library for terminal layouts) is installed in `~/.venv/venv312`.
+[2026-10-01 19:59:58] User changed approach: a script in a repo `toolbox/` folder, called from `Allrun` (not a solver change). Started implementation.
+[2026-10-01 20:02:42] Sample log: the user's own run of project 01 case (`log.compressibleLaserbeamFoam`, first serial, then restarted on 8 cores; live while testing).
+[2026-10-01 20:02:42] Wrote `toolbox/rundash.py`: incremental log reader, parser for every per-step line type (Time, deltaT, Courant, laser position/power/Q deposited/rays, max(U), p_rgh range, min(T), max|vDot|*dt, phase masses + drift, alpha min/max/avg, closure defect, capped cells, AMR refine/unrefine, first initial residual per field, T solves per step, epsilon1 residual, continuity, FOAM Warning/FATAL, NaN). Reads endTime/writeInterval (controlDict) and maxTempCorrector (fvSolution). Speed and finish time from the last 200 ClockTime samples. rich layout when available and a terminal, else plain line.
+[2026-10-01 20:02:42] Tested with `--once` on the live log: all panels filled; plain mode works with system python3 (no rich) and venv312. Fixed label "T corrector loops 21 / 20" → "T solves per step 21 (maxTempCorrector 20)" (first solve + 20 corrections).
+[2026-10-01 20:02:42] Rewrote case `Allrun` (project 01) to use the dashboard. `bash -n` ok. Not run: the user's current run (started with the old Allrun) left untouched.
+[2026-10-01 20:02:42] Added "Live run dashboard" section and toolbox to `CLAUDE.md`.
+[2026-10-01 20:07:35] Committed repo changes on new branch `compressible-cleanup-and-run-dashboard`: 0e3ee3b0 (remove non-compressible tutorials + .agents), 741c63cd (CLAUDE.md + toolbox/rundash.py). project/ not included (ignored by `0*`). Not pushed.
+[2026-10-01 20:29:58] rundash.py: parses the evaporation pair line "(liq,vap)  Tboil=..." (pairs, clamped cells) and "integrated evap = X kg/s, cond = Y kg/s"; shows them under Phases and in the plain line; red warning if no pair after 3 steps (would have caught the aluminiumVapour naming bug in project 01). Tested on the old log (warning shown) and on synthetic pair lines (parsed).
+[2026-10-01 20:53:01] rundash.py: shows max T when a fieldMinMax function object on T is present (parses "max(T) = X ..."). Tested.

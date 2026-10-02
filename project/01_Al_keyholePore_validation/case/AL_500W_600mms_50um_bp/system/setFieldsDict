@@ -1,0 +1,43 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Version:  v2512
+    \\  /    A nd           | Website:  www.openfoam.com
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      setFieldsDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Argon everywhere, then aluminium from the plate top (y = Hgas = 120 um)
+// down. The plate top lies on a cell face (see blockMeshDict), so there are no
+// part-filled cells at the start.
+
+defaultFieldValues
+(
+    volScalarFieldValue alpha.argon           1
+    volScalarFieldValue alpha.aluminium       0
+    volScalarFieldValue alpha.aluminiumvapour 0
+    volVectorFieldValue U (0 0 0)
+);
+
+regions
+(
+    boxToCell
+    {
+        box (-1 120e-6 -1) (1 1 1);
+        fieldValues
+        (
+            volScalarFieldValue alpha.argon     0
+            volScalarFieldValue alpha.aluminium 1
+        );
+    }
+);
+
+// ************************************************************************* //

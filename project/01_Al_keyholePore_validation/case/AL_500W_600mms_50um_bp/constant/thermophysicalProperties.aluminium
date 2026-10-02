@@ -1,0 +1,74 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Version:  v2512
+    \\  /    A nd           | Website:  www.openfoam.com
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      thermophysicalProperties.aluminium;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Pure aluminium, 99.99 % (Goodfellow), as in Huang et al. 2022.
+// Values are typical literature values for liquid Al near the melting point.
+// Huang et al. Supplementary Table 3 (their property set) was not available.
+
+phaseState      condensed;
+
+thermoType
+{
+    type            heRhoThermo;
+    mixture         pureMixture;
+    transport       const;
+    thermo          hConst;
+    equationOfState adiabaticPerfectFluid;
+    specie          specie;
+    energy          sensibleInternalEnergy;
+}
+
+// Pure Al melts at 933.5 K. A 25 K band is used so the melting model has a
+// finite mushy range (same width as the tutorial).
+TSolidus        921.0;
+TLiquidus       946.0;
+LatentHeat      3.97e5;         // latent heat of fusion [J/kg]
+
+elec_conductivity       4.0e6;  // liquid Al at melting [S/m]; sets Fresnel absorptivity
+magnetic_permeability   1.256e-6;
+
+mixture
+{
+    specie
+    {
+        molWeight   26.98;      // used in the saturation-pressure law: keep exact
+    }
+    equationOfState
+    {
+        // Liquid density at melting. B and gamma make the liquid slightly
+        // compressible (sound speed ~70 m/s) to keep the time step usable,
+        // as in the tutorial. Real liquid Al is far stiffer.
+        p0          1e5;
+        rho0        2380;
+        gamma       1.2;
+        B           1e7;
+    }
+    thermodynamics
+    {
+        Cp          1180;       // liquid Al [J/(kg K)]
+        Hf          0;
+    }
+    transport
+    {
+        mu          1.3e-3;     // liquid Al at melting [Pa s]
+        // Pr = mu Cp / k with k = 91 W/(m K) (liquid Al at melting).
+        // One k for solid and liquid: solid Al (~210 W/(m K)) conducts more.
+        Pr          0.01686;
+    }
+}
+
+// ************************************************************************* //

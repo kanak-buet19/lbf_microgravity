@@ -1,0 +1,53 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Version:  v2512
+    \\  /    A nd           | Website:  www.openfoam.com
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      LaserProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Rays seeded on a disc at the laser position (polar mode), so the beam shape
+// does not depend on the mesh. The position y = 1 um is inside the argon,
+// just below the open top patch.
+radialPolarHeatSource yes;
+nRadial         20;
+nAngular        36;
+
+timeVsLaserPosition
+{
+    file    "$FOAM_CASE/constant/timeVsLaserPosition";
+    outOfBounds clamp;
+}
+
+timeVsLaserPower
+{
+    file    "$FOAM_CASE/constant/timeVsLaserPower";
+    outOfBounds clamp;
+}
+
+V_incident      (0 1 0);        // straight down into the plate
+
+// 50 um spot diameter. Radius_Flavour 2 gives exp(-2 r^2/R^2), i.e. R is the
+// 1/e^2 radius. Huang et al. do not say which diameter definition they use.
+laserRadius     @laserRadius@;
+Radius_Flavour  2.0;
+
+// IPG YLR-500-AC fibre laser, 1070 +/- 10 nm (Huang et al., Methods).
+wavelength      1.07e-6;
+
+// Free-electron density for the Fresnel (Drude) absorptivity:
+// 3 valence electrons x 6.03e28 atoms/m^3 for aluminium.
+e_num_density   1.81e29;
+
+useLocalSearch  true;
+
+// ************************************************************************* //

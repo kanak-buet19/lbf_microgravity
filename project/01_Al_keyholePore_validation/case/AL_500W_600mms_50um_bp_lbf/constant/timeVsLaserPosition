@@ -1,0 +1,7 @@
+// time [s]   (x y z) [m]
+// Scan along +x at 0.6 m/s from x = 200 um, centred across the plate
+// (z = 250 um). y = 1 um: inside the argon, below the open top.
+(
+    (0          (200e-6   1e-6  250e-6))
+    (1.5e-3     (1100e-6  1e-6  250e-6))
+)

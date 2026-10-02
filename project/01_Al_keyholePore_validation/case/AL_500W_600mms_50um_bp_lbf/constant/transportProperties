@@ -1,0 +1,83 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2512                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      transportProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+// Huang et al. 2022 Movie 4: Al bare plate. Incompressible two-phase
+// (laserbeamFoam): metal + argon, no vapour phase. Evaporation enters as
+// recoil pressure 0.54*p0*exp(...) (UEqn.H) and evaporative cooling (TEqn.H).
+// The solver looks up "alpha.metal": the metal phase must be called metal.
+
+interfaceTrackingScheme MULES;
+
+phases          (metal gas);
+
+metal                               // aluminium (same values as the
+{                                   // compressible case, see its README)
+    transportModel  Newtonian;
+    nu              5.46e-07;       // mu 1.3e-3 Pa s / rho
+    rho             2380;           // liquid at melting [kg/m3]
+
+    Tsolidus        921;
+    Tliquidus       946;
+    LatentHeat      3.97e5;         // fusion [J/kg]
+    beta            1.5e-4;         // thermal expansion, buoyancy [1/K]
+    // Solid and liquid values, blended linearly in T across the mushy zone
+    // Tsolidus..Tliquidus. Pure Al (99.99 %, Huang Methods). Calibration knobs.
+    //   solid k : 237 at 300 K -> 212 at 933 K (linear fit)
+    //   liquid k: ~91 at melting (Mills 2002)
+    //   solid cp: 894 at 300 K -> 1173 at 933 K (linear fit)
+    //   liquid cp: 1177 (31.75 J/(mol K))
+    // The running 1.5 ms steady-state run started with single values
+    // (k = 91, cp = 1180 for all metal). Kept so it resumes with the same
+    // physics. For new runs: delete poly_kappa/poly_cp and uncomment below
+    // (needs laserbeamFoam rebuilt after 2026-10-01 22:30).
+    poly_kappa      (91   0 0 0 0 0 0 0);   // W/(m K)
+    poly_cp         (1180 0 0 0 0 0 0 0);   // J/(kg K)
+    // poly_kappa_solid  (248  -0.0385 0 0 0 0 0 0);   // W/(m K)
+    // poly_kappa_liquid (91    0      0 0 0 0 0 0);
+    // poly_cp_solid     (762   0.44   0 0 0 0 0 0);   // J/(kg K)
+    // poly_cp_liquid    (1177  0      0 0 0 0 0 0);
+    Elec_conductivity 4e6;          // S/m (liquid), used by the Fresnel absorption
+}
+
+gas                                 // argon at 1.11325e5 Pa, 300 K
+{
+    transportModel  Newtonian;
+    nu              1.275e-05;      // mu 2.27e-5 Pa s / rho
+    rho             1.78;
+
+    poly_kappa      (0.0177 0 0 0 0 0 0 0);
+    poly_cp         (520 0 0 0 0 0 0 0);
+
+    Tsolidus        1.0;            // dummies (gas never melts)
+    Tliquidus       10.0;
+    LatentHeat      1;
+    beta            3.3e-3;
+}
+
+emS                 0.1;            // emissivity solid / liquid Al
+emL                 0.1;
+TRef                TRef [0 0 0 1 0 0 0] 300;
+
+sigma               0.914;          // N/m at melting
+Marangoni_Constant  -3.5e-4;        // dsigma/dT [N/(m K)]
+
+// Vapour pressure: Psat = p0*exp(Lv*Mm/R*(1/Tvap - 1/T)).
+// p0/Tvap: 1 atm boiling point (reference of the curve, not the ambient).
+p0                  1.01325e5;
+Tvap                2743;
+Mm                  0.02698;        // kg/mol
+LatentHeatVap       1.08e7;         // J/kg
+
+// ************************************************************************* //

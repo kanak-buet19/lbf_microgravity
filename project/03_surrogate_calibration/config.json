@@ -1,0 +1,89 @@
+{
+  "_comment": "Calibration settings. Read by scripts/driver.py at every start; edit and restart the driver to change. Lengths in m, times in s unless the key says _um/_us.",
+
+  "solver": "laserbeamFoam",
+  "template": "template",
+  "runs_dir": "runs",
+
+  "cores": {
+    "max_cores": 64,
+    "cores_per_job": 8,
+    "first_cpu": 0,
+    "mpirun_extra": ["--oversubscribe", "--bind-to", "none"]
+  },
+
+  "case": {
+    "Lx": 900e-6,
+    "laser_x0": 150e-6,
+    "scan_speed": 0.6,
+    "end_time_cap": 1.0e-3,
+    "write_interval": 2e-6
+  },
+
+  "knobs": [
+    {"name": "laserRadius", "low": 20e-6,  "high": 45e-6,  "nominal": 25e-6,  "unit": "m",      "label": "beam radius (1/e^2)"},
+    {"name": "elecCond",    "low": 2e6,    "high": 5e6,    "nominal": 4e6,    "unit": "S/m",    "label": "electrical conductivity"},
+    {"name": "ks",          "low": 0.8,    "high": 1.2,    "nominal": 1.0,    "unit": "-",      "label": "solid k scale"},
+    {"name": "kl",          "low": 70,     "high": 120,    "nominal": 91,     "unit": "W/(m K)", "label": "liquid k"},
+    {"name": "cs",          "low": 0.9,    "high": 1.1,    "nominal": 1.0,    "unit": "-",      "label": "solid cp scale"},
+    {"name": "cl",          "low": 1060,   "high": 1300,   "nominal": 1177,   "unit": "J/(kg K)", "label": "liquid cp"},
+    {"name": "sigma",       "low": 0.5,    "high": 1.0,    "nominal": 0.914,  "unit": "N/m",    "label": "surface tension"}
+  ],
+
+  "targets": {
+    "_comment": "Huang 2022 Movie 4, measured from the X-ray movie (01/reference_paper/huang2022/AL_500W_600mms_50um_bp/data). tol = how far off still counts as a 1-sigma miss; smaller tol = more weight.",
+    "depth_mean_um":   {"value": 563.4, "tol": 20.0},
+    "depth_std_um":    {"value": 36.6,  "tol": 15.0},
+    "mouth_mean_um":   {"value": 32.2,  "tol": 8.0},
+    "len_0_200_um":    {"value": 37.9,  "tol": 8.0},
+    "len_200_400_um":  {"value": 33.0,  "tol": 8.0},
+    "len_400_550_um":  {"value": 27.6,  "tol": 8.0}
+  },
+
+  "xray": {
+    "_comment": "Simulated X-ray side view, like Huang: projection along z, 1.96 um pixels, one frame per 20 us, a pixel counts as keyhole if gas path length along z >= min_path_um.",
+    "pixel_um": 1.96,
+    "frame_us": 20.0,
+    "min_path_um": 5.0,
+    "surface_y": 120e-6
+  },
+
+  "steady": {
+    "_comment": "Early stop. Steady = mean depth of the last window_us differs from the window before by < tol_um (and t > t_min_us). Then collect stats_us more of steady data and stop.",
+    "t_min_us": 150.0,
+    "window_us": 100.0,
+    "tol_um": 15.0,
+    "stats_us": 400.0
+  },
+
+  "ml_window": {
+    "_comment": "Field window moving with the laser, saved every write for later ML. Relative to laser x / plate surface / laser z.",
+    "enabled": true,
+    "x_um": [-250, 50],
+    "depth_um": [-60, 720],
+    "z_um": [-100, 100],
+    "res_um": 6.0,
+    "fields": ["T", "alpha.metal", "U"]
+  },
+
+  "keep_fields_every_us": 20.0,
+
+  "design": {
+    "n_initial": 14,
+    "n_replicates": 2,
+    "seed": 1
+  },
+
+  "stop": {
+    "max_days": 7.0,
+    "max_runs": 50,
+    "posterior_std_frac": 0.05,
+    "min_runs": 20
+  },
+
+  "stall_minutes": 45,
+  "min_free_disk_gb": 50,
+  "backup_dir": "backup",
+  "backup_every_hours": 3,
+  "dashboard_every_minutes": 3
+}

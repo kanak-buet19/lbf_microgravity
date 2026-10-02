@@ -1,0 +1,71 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Version:  v2512
+    \\  /    A nd           | Website:  www.openfoam.com
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      dynamicMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Adaptive mesh refinement (AMR): cells are split where refineIndicator is
+// high and merged back where it drops. refineIndicator is computed by the
+// solver every step (update.H): it marks the band around the metal surface,
+// any metal vapour, and cells where gas and metal mix (keyhole, bubbles).
+//
+// Settings follow tutorials/compressiblelaserbeamFoam/multiComponentLaserIrradiation
+// (tuned for AMR in commit 0bea7ea1). Base 20 um / 2 levels -> 5 um.
+//
+// To switch AMR off: dynamicFvMesh staticFvMesh; and set a finer dx in
+// system/blockMeshDict.
+
+dynamicFvMesh   dynamicRefineFvMesh;
+
+// How often to refine [time steps]
+refineInterval  5;
+
+// Field to refine on
+field           refineIndicator;
+
+// Refine cells with lowerRefineLevel < field < upperRefineLevel
+lowerRefineLevel 0.025;
+upperRefineLevel 2;
+
+// Unrefine cells with field < unrefineLevel
+unrefineLevel   0.05;
+
+// Layers of refined cells kept around the refined region
+nBufferLayers   6;
+
+// Number of splits: 20 um -> 10 um -> 5 um
+maxRefinement   2;
+
+// Stop refining past this many cells
+maxCells        20000000;
+
+// Fluxes on changed faces are recalculated by interpolating the velocity.
+// 'none' for surface fields that do not need it.
+correctFluxes
+(
+    (phi U)
+    (nHatf none)
+    (rhoPhi none)
+    (alphaPhi0.metal none)
+    (ghf none)
+    (alphaPhiUn none)
+    (rhophicp none)
+    (phi_0 U)
+    (rhoPhi_0 none)
+);
+
+// Write the refinement level as a field
+dumpLevel       true;
+
+// ************************************************************************* //

@@ -1,0 +1,88 @@
+#!/bin/bash
+cd "${0%/*}" || exit                                # Run from this directory
+. ${WM_PROJECT_DIR:?}/bin/tools/RunFunctions
+#------------------------------------------------------------------------------
+# Huang et al. 2022 Movie 4: Al bare plate, 500 W, 0.6 m/s, 50 um spot.
+# Incompressible two-phase solver laserbeamFoam (metal + argon, no vapour).
+#
+# Usage:
+#   ./Allrun            parallel (default), numberOfSubdomains from system/decomposeParDict
+#   ./Allrun -serial    serial
+#
+# Resumable: if a saved time > 0 exists (processor0/ for parallel, the case
+# folder for serial), the mesh/setFields/decomposePar steps are skipped and the
+# solver continues from the latest saved time (controlDict: startFrom
+# latestTime). The previous solver log is kept as log.<solver>.1, .2, ...
+#
+# The solver writes to log.laserbeamFoam. The terminal shows a live
+# dashboard (toolbox/rundash.py). Ctrl+C stops the solver.
+#   LBF_DASH=0 ./Allrun ...      plain full solver output instead of the dashboard
+#   LBF_PYTHON=<python> ...      Python used for the dashboard (default python3;
+#                                needs the 'rich' package for the full layout)
+
+touch open.foam
+
+solverLog=log.laserbeamFoam
+if [ "$1" = "-serial" ]
+then
+    timeDir=.
+    solverCmd=(laserbeamFoam)
+else
+    timeDir=processor0
+    solverCmd=(mpirun -np "$(getNumberOfProcessors)" laserbeamFoam -parallel)
+fi
+
+# Latest saved time (numeric folder names only), empty if none
+latestTime=$(ls -1 "$timeDir" 2>/dev/null | grep -E '^[0-9][0-9.eE+-]*$' | sort -g | tail -1)
+
+if [ -n "$latestTime" ] && awk -v t="$latestTime" 'BEGIN {exit !(t > 0)}'
+then
+    echo "Resuming from t = $latestTime (setup steps skipped)"
+    if [ -f "$solverLog" ]
+    then
+        n=1
+        while [ -e "$solverLog.$n" ]; do n=$((n + 1)); done
+        mv "$solverLog" "$solverLog.$n"
+        echo "Previous solver log kept as $solverLog.$n"
+    fi
+else
+    echo "Copying 'initial' to 0"
+    rm -rf 0 && cp -r initial 0
+
+    runApplication blockMesh
+    runApplication checkMesh
+    runApplication setFields
+    [ "$1" = "-serial" ] || runApplication decomposePar
+fi
+
+if [ "${LBF_DASH:-1}" = "0" ]
+then
+    "${solverCmd[@]}" 2>&1 | tee "$solverLog"
+    exit "${PIPESTATUS[0]}"
+fi
+
+# Solver in the background, all its output to the log only
+"${solverCmd[@]}" > "$solverLog" 2>&1 &
+solverPid=$!
+
+# Ctrl+C / kill: stop the solver too (a background job ignores Ctrl+C itself)
+trap 'echo; echo "Stopping solver (PID $solverPid)"; kill -TERM $solverPid 2>/dev/null; wait $solverPid; exit 130' INT TERM
+
+# Dashboard in the foreground. It only reads the log; if it fails, the run
+# carries on and we just wait for the solver.
+repoDir=$(git rev-parse --show-toplevel 2>/dev/null)
+dash="$repoDir/toolbox/rundash.py"
+if [ -f "$dash" ]
+then
+    "${LBF_PYTHON:-python3}" "$dash" --log "$solverLog" --pid "$solverPid" \
+        || echo "Dashboard stopped; solver still running. Follow it with: tail -f $solverLog"
+else
+    echo "Dashboard not found ($dash). Follow the run with: tail -f $solverLog"
+fi
+
+wait $solverPid
+status=$?
+echo "Solver finished with exit code $status (log: $solverLog)"
+exit $status
+
+#------------------------------------------------------------------------------
